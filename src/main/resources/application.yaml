@@ -1,6 +1,11 @@
 server:
   port: 8080
 
+# уровень логирования для запуска в режиме отладки
+#logging:
+#  level:
+#    searchengine: DEBUG
+
 spring:
   datasource:
     username: user
@@ -12,13 +17,26 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
     hibernate:
       ddl-auto: update
-    show-sql: true
+# для запуска в режиме отладки
+#    show-sql: true
 
 indexing-settings:
   sites:
-    - url: https://www.lenta.ru
-      name: Лента.ру
-    - url: https://www.skillbox.ru
-      name: Skillbox
-    - url: https://www.playback.ru
-      name: PlayBack.Ru
+    - url: http://cimus.biz
+      name: Цимус
+    - url: https://nopaper.ru/
+      name: Nopaper
+
+#    - url: https://www.lenta.ru
+#      name: Лента.ру
+#    - url: https://www.skillbox.ru
+#      name: Skillbox
+#    - url: https://www.playback.ru
+#      name: PlayBack.Ru
+
+java:
+  concurrent:
+    corePoolSize: 10
+    maximumPoolSize: 20
+    queueCapacity: 200
+    keepAliveSeconds: 60

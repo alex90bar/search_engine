@@ -1,4 +1,4 @@
-package searchengine.model;
+package searchengine.dao.model;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -38,7 +38,7 @@ public class Page {
 
     @ManyToOne
     @JoinColumn(name = "site_id", nullable = false)
-    private Site siteId;
+    private SiteEntity siteId;
 
     @Column(name = "path", columnDefinition = "TEXT NOT NULL, Index(path(512))")
     private String path;

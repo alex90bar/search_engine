@@ -1,8 +1,10 @@
-package searchengine.model;
+package searchengine.dao.model;
 
 import java.time.ZonedDateTime;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -15,7 +17,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 /**
- * Site
+ * SiteEntity
  *
  * @author alex90bar
  */
@@ -28,13 +30,14 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "site")
-public class Site {
+public class SiteEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", columnDefinition = "ENUM('INDEXING', 'INDEXED', 'FAILED')", nullable = false)
     private IndexingStatus status;
 
@@ -44,7 +47,7 @@ public class Site {
     @Column(name = "last_error", columnDefinition = "TEXT")
     private String lastError;
 
-    @Column(name = "url", columnDefinition = "VARCHAR(255)", nullable = false)
+    @Column(name = "url", columnDefinition = "VARCHAR(255)", nullable = false, unique = true)
     private String url;
 
     @Column(name = "name", columnDefinition = "VARCHAR(255)", nullable = false)

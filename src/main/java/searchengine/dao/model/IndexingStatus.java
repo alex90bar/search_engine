@@ -1,4 +1,4 @@
-package searchengine.model;
+package searchengine.dao.model;
 
 public enum IndexingStatus {
     INDEXING,
