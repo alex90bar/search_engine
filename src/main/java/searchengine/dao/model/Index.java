@@ -16,7 +16,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 /**
- * Page
+ * Index
  *
  * @author alex90bar
  */
@@ -28,8 +28,8 @@ import lombok.ToString;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "page")
-public class Page {
+@Table(name = "`index`")
+public class Index {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,15 +37,13 @@ public class Page {
     private Integer id;
 
     @ManyToOne
-    @JoinColumn(name = "site_id", nullable = false)
-    private SiteEntity site;
+    @JoinColumn(name = "page_id", nullable = false)
+    private Page page;
 
-    @Column(name = "path", columnDefinition = "TEXT NOT NULL, Index(path(512))")
-    private String path;
+    @ManyToOne
+    @JoinColumn(name = "lemma_id", nullable = false)
+    private Lemma lemma;
 
-    @Column(name = "code", nullable = false)
-    private Integer code;
-
-    @Column(name = "content", columnDefinition = "MEDIUMTEXT", nullable = false)
-    private String content;
+    @Column(name = "frequency", columnDefinition = "FLOAT", nullable = false)
+    private Float frequency;
 }

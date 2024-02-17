@@ -58,7 +58,7 @@ public class WebSurfer extends RecursiveAction {
                 Document document = response.parse();
 
                 Page page = Page.builder()
-                    .siteId(siteEntity)
+                    .site(siteEntity)
                     .path(url)
                     .code(statusCode)
                     .content(document.html())
