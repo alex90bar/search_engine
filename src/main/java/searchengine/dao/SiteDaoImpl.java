@@ -22,6 +22,7 @@ public class SiteDaoImpl implements SiteDao {
     private static final String INDEXING_IS_STOPPED_BY_USER_MESS = "Индексация остановлена пользователем";
 
     @Override
+    @Transactional(readOnly = true)
     public SiteEntity getByUrl(String url) {
         return siteRepository.findByUrl(url);
     }
@@ -30,6 +31,12 @@ public class SiteDaoImpl implements SiteDao {
     @Transactional
     public void deleteById(Integer id) {
         siteRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAll() {
+        siteRepository.deleteAll();
     }
 
     @Override
@@ -44,6 +51,12 @@ public class SiteDaoImpl implements SiteDao {
         siteEntity.setStatus(IndexingStatus.FAILED);
         siteEntity.setLastError(INDEXING_IS_STOPPED_BY_USER_MESS);
         update(siteEntity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long getTotalCount() {
+        return siteRepository.count();
     }
 }
 

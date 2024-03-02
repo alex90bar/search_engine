@@ -1,5 +1,6 @@
 package searchengine.dao.repository;
 
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import searchengine.dao.model.Page;
 import searchengine.dao.model.SiteEntity;
@@ -12,8 +13,12 @@ import searchengine.dao.model.SiteEntity;
 
 public interface PageRepository extends JpaRepository<Page, Integer> {
 
-    long deleteAllBySiteId(SiteEntity siteId);
+    long deleteAllBySite(SiteEntity siteId);
+
+    List<Page> findAllBySite(SiteEntity site);
 
     boolean existsByPath(String path);
+
+    Page findByPath(String path);
 
 }

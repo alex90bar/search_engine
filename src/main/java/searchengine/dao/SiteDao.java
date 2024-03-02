@@ -14,9 +14,13 @@ public interface SiteDao {
 
     void deleteById(Integer id);
 
+    void deleteAll();
+
     SiteEntity update(SiteEntity siteEntity);
 
     void setStatusFailed(SiteEntity siteEntity);
+
+    long getTotalCount();
 
 }
 

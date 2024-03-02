@@ -44,6 +44,6 @@ public class Index {
     @JoinColumn(name = "lemma_id", nullable = false)
     private Lemma lemma;
 
-    @Column(name = "frequency", columnDefinition = "FLOAT", nullable = false)
-    private Float frequency;
+    @Column(name = "`rank`", columnDefinition = "FLOAT", nullable = false)
+    private Float rank;
 }

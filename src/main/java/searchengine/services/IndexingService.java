@@ -14,6 +14,8 @@ public interface IndexingService {
     ResponseEntity<IndexingResponse> startIndexing();
 
     ResponseEntity<IndexingResponse> stopIndexing();
+
+    ResponseEntity<IndexingResponse> indexPage(String url);
 }
 
 

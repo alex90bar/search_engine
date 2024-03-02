@@ -22,17 +22,19 @@ spring:
 
 indexing-settings:
   sites:
-    - url: http://cimus.biz
-      name: Цимус
-    - url: https://nopaper.ru/
-      name: Nopaper
+    - url: https://www.playback.ru/
+      name: Интернет магазин PlayBack.ru
+    - url: https://volochek.life/
+      name: Портал www.volochek.life
 
-#    - url: https://www.lenta.ru
-#      name: Лента.ру
-#    - url: https://www.skillbox.ru
-#      name: Skillbox
-#    - url: https://www.playback.ru
-#      name: PlayBack.Ru
+#    - url: https://et-cetera.ru/mobile/
+#      name: МОСКОВСКИЙ ТЕАТР «ET CETERA»
+
+#    - url: http://cimus.biz/
+#      name: Цимус
+#    - url: https://nopaper.ru/
+#      name: Nopaper
+
 
 java:
   concurrent:

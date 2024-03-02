@@ -32,8 +32,7 @@ import searchengine.utils.ContextUtils;
 public class WebSurfer extends RecursiveAction {
 
     private final String url;
-    private final SiteDao siteDao;
-    private final PageDao pageDao;
+    private final SinglePageProcessor singlePageProcessor;
     private final SiteEntity siteEntity;
 
     @Override
@@ -48,25 +47,7 @@ public class WebSurfer extends RecursiveAction {
             } else {
                 ContextUtils.LINKS_SET.add(url);
 
-                Connection.Response response = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
-                    .referrer("http://www.google.com")
-                    .execute();
-
-                int statusCode = response.statusCode();
-
-                Document document = response.parse();
-
-                Page page = Page.builder()
-                    .site(siteEntity)
-                    .path(url)
-                    .code(statusCode)
-                    .content(document.html())
-                    .build();
-
-                pageDao.update(page);
-                siteEntity.setStatusTime(ZonedDateTime.now());
-                siteDao.update(siteEntity);
+                Document document = singlePageProcessor.processSinglePage(url, siteEntity);
 
                 Elements links = document.select("a[href]");
 
@@ -101,7 +82,7 @@ public class WebSurfer extends RecursiveAction {
             }  else if (!link.startsWith(siteEntity.getUrl())) {
                 log.debug("Сторонний сайт, пропускаем: {}", link);
             }  else {
-                tasks.add(new WebSurfer(link, siteDao, pageDao, siteEntity));
+                tasks.add(new WebSurfer(link, singlePageProcessor, siteEntity));
             }
         });
 
