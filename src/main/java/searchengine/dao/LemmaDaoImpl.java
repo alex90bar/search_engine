@@ -55,4 +55,10 @@ public class LemmaDaoImpl implements LemmaDao {
     public long getTotalCount() {
         return lemmaRepository.count();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countLemmasBySite(SiteEntity site) {
+        return lemmaRepository.countLemmaBySite(site);
+    }
 }

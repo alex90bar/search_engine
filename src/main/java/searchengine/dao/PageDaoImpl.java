@@ -67,6 +67,12 @@ public class PageDaoImpl implements PageDao {
     public long getTotalCount() {
         return pageRepository.count();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countPagesBySite(SiteEntity site) {
+        return pageRepository.countPagesBySite(site);
+    }
 }
 
 

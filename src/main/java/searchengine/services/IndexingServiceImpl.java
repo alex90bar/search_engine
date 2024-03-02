@@ -21,6 +21,7 @@ import searchengine.dao.model.Lemma;
 import searchengine.dao.model.Page;
 import searchengine.dao.model.SiteEntity;
 import searchengine.dto.indexing.IndexingResponse;
+import searchengine.utils.CheckIndexingUtil;
 import searchengine.utils.ContextUtils;
 
 /**
@@ -42,6 +43,7 @@ public class IndexingServiceImpl implements IndexingService {
     private final DatabaseCleaner databaseCleaner;
     private final ConcurrentWebSiteProcessor webSiteProcessor;
     private final SinglePageProcessor singlePageProcessor;
+    private final CheckIndexingUtil checkIndexingUtil;
 
     private static final String INDEXING_IS_RUNNING_MESS = "Индексация уже запущена";
     private static final String INDEXING_IS_NOT_RUNNING_MESS = "Индексация не запущена";
@@ -53,7 +55,7 @@ public class IndexingServiceImpl implements IndexingService {
     public ResponseEntity<IndexingResponse> startIndexing() {
         List<Site> sites = sitesList.getSites();
 
-        if (checkIsIndexingRunning(sites) || ContextUtils.isDatabaseCleanerWorking.get() || ContextUtils.isSinglePageIndexingRunning.get()) {
+        if (checkIndexingUtil.checkIsIndexingRunning(sites) || ContextUtils.isDatabaseCleanerWorking.get() || ContextUtils.isSinglePageIndexingRunning.get()) {
             return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(INDEXING_IS_RUNNING_MESS).build());
         }
 
@@ -71,7 +73,7 @@ public class IndexingServiceImpl implements IndexingService {
     public ResponseEntity<IndexingResponse> stopIndexing() {
         List<Site> sites = sitesList.getSites();
 
-        if (!checkIsIndexingRunning(sites) && !ContextUtils.isDatabaseCleanerWorking.get()) {
+        if (!checkIndexingUtil.checkIsIndexingRunning(sites) && !ContextUtils.isDatabaseCleanerWorking.get()) {
             return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(INDEXING_IS_NOT_RUNNING_MESS).build());
         }
 
@@ -88,7 +90,7 @@ public class IndexingServiceImpl implements IndexingService {
     public ResponseEntity<IndexingResponse> indexPage(String url) {
         List<Site> sites = sitesList.getSites();
 
-        if (checkIsIndexingRunning(sites) || ContextUtils.isDatabaseCleanerWorking.get() || ContextUtils.isSinglePageIndexingRunning.get()) {
+        if (checkIndexingUtil.checkIsIndexingRunning(sites) || ContextUtils.isDatabaseCleanerWorking.get() || ContextUtils.isSinglePageIndexingRunning.get()) {
             return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(INDEXING_IS_RUNNING_MESS).build());
         }
 
@@ -138,12 +140,6 @@ public class IndexingServiceImpl implements IndexingService {
         lemmaDao.deleteLemmaList(lemmaList);
         pageDao.delete(page);
         log.info("Очистка таблиц завершена для странички: {}", path);
-    }
-
-    private boolean checkIsIndexingRunning(List<Site> sites) {
-        return sites.stream()
-            .map(site -> siteDao.getByUrl(site.getUrl()))
-            .anyMatch(siteEntity -> siteEntity != null && IndexingStatus.INDEXING.equals(siteEntity.getStatus()));
     }
 
     private void changeDbStatusToFailed(List<Site> sites) {

@@ -28,6 +28,8 @@ public interface PageDao {
 
     long getTotalCount();
 
+    int countPagesBySite(SiteEntity site);
+
 }
 
 

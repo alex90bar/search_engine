@@ -24,4 +24,6 @@ public interface LemmaDao {
 
     long getTotalCount();
 
+    int countLemmasBySite(SiteEntity site);
+
 }

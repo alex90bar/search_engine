@@ -1,5 +1,6 @@
 package searchengine.dao;
 
+import java.util.List;
 import searchengine.dao.model.SiteEntity;
 
 /**
@@ -11,6 +12,8 @@ import searchengine.dao.model.SiteEntity;
 public interface SiteDao {
 
     SiteEntity getByUrl(String url);
+
+    List<SiteEntity> getAll();
 
     void deleteById(Integer id);
 

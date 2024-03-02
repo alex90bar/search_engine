@@ -1,5 +1,6 @@
 package searchengine.dao;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,12 @@ public class SiteDaoImpl implements SiteDao {
     @Transactional(readOnly = true)
     public SiteEntity getByUrl(String url) {
         return siteRepository.findByUrl(url);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SiteEntity> getAll() {
+        return siteRepository.findAll();
     }
 
     @Override
