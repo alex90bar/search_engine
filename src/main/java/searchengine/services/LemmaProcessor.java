@@ -1,6 +1,5 @@
 package searchengine.services;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -9,7 +8,6 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.morphology.LuceneMorphology;
-import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.springframework.stereotype.Service;
 
 /**
@@ -24,12 +22,11 @@ import org.springframework.stereotype.Service;
 public class LemmaProcessor {
 
     private static final String[] particlesNames = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ"};
+    private final LuceneMorphology luceneMorphology;
 
-    public Map<String, Integer> extractLemmasFromContent(String content) throws IOException {
+    public Map<String, Integer> extractLemmasFromContent(String content) {
         String[] words = toArrayContainsRussianWords(content);
         HashMap<String, Integer> lemmas = new HashMap<>();
-
-        LuceneMorphology luceneMorphology = new RussianLuceneMorphology();
 
         Arrays.stream(words)
             .filter(word -> !word.isBlank())

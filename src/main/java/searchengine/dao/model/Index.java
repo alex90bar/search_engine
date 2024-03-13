@@ -34,7 +34,7 @@ public class Index {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
-    private Integer id;
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name = "page_id", nullable = false)
@@ -45,5 +45,5 @@ public class Index {
     private Lemma lemma;
 
     @Column(name = "`rank`", columnDefinition = "FLOAT", nullable = false)
-    private Float rank;
+    private Integer rank;
 }

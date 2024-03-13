@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.UnsupportedMimeTypeException;
@@ -55,7 +56,7 @@ public class IndexingServiceImpl implements IndexingService {
     public ResponseEntity<IndexingResponse> startIndexing() {
         List<Site> sites = sitesList.getSites();
 
-        if (checkIndexingUtil.checkIsIndexingRunning(sites) || ContextUtils.isDatabaseCleanerWorking.get() || ContextUtils.isSinglePageIndexingRunning.get()) {
+        if (checkIndexingUtil.checkIsIndexingRunning(sites) || ContextUtils.isSinglePageIndexingRunning.get()) {
             return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(INDEXING_IS_RUNNING_MESS).build());
         }
 
@@ -64,7 +65,9 @@ public class IndexingServiceImpl implements IndexingService {
         ContextUtils.LEMMA_MAP.clear();
         ContextUtils.stopFlag.set(false);
 
-        databaseCleaner.clearDataAndStartIndexing(sites);
+        databaseCleaner.clearDataAndStartIndexing();
+
+        sites.forEach(webSiteProcessor::processWebSite);
 
         return ResponseEntity.ok(IndexingResponse.builder().result(true).build());
     }
@@ -73,7 +76,7 @@ public class IndexingServiceImpl implements IndexingService {
     public ResponseEntity<IndexingResponse> stopIndexing() {
         List<Site> sites = sitesList.getSites();
 
-        if (!checkIndexingUtil.checkIsIndexingRunning(sites) && !ContextUtils.isDatabaseCleanerWorking.get()) {
+        if (!checkIndexingUtil.checkIsIndexingRunning(sites)) {
             return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(INDEXING_IS_NOT_RUNNING_MESS).build());
         }
 
@@ -90,7 +93,7 @@ public class IndexingServiceImpl implements IndexingService {
     public ResponseEntity<IndexingResponse> indexPage(String url) {
         List<Site> sites = sitesList.getSites();
 
-        if (checkIndexingUtil.checkIsIndexingRunning(sites) || ContextUtils.isDatabaseCleanerWorking.get() || ContextUtils.isSinglePageIndexingRunning.get()) {
+        if (checkIndexingUtil.checkIsIndexingRunning(sites) || ContextUtils.isSinglePageIndexingRunning.get()) {
             return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(INDEXING_IS_RUNNING_MESS).build());
         }
 
@@ -113,7 +116,7 @@ public class IndexingServiceImpl implements IndexingService {
         ContextUtils.LEMMA_MAP.put(site.getUrl(), new ConcurrentHashMap<>());
 
         try {
-            singlePageProcessor.processSinglePage(url, siteEntity);
+            singlePageProcessor.processSinglePage(url, siteEntity, true);
         } catch (UnsupportedMimeTypeException e) {
             log.debug("Не поддерживаемый тип гиперссылки, индексируем только html-странички, url: {} текст ошибки: {}", url, e.getMessage());
             ContextUtils.isSinglePageIndexingRunning.set(false);
@@ -137,7 +140,23 @@ public class IndexingServiceImpl implements IndexingService {
         List<Index> indexList = indexDao.findByPage(page);
         indexList.forEach(index -> lemmaList.add(index.getLemma()));
         indexDao.deleteIndexList(indexList);
-        lemmaDao.deleteLemmaList(lemmaList);
+
+        List<Lemma> lemmasToDelete = lemmaList.stream()
+            .filter(lemma -> lemma.getFrequency() == 1)
+            .toList();
+
+        lemmaDao.deleteLemmaList(lemmasToDelete);
+
+        List<Lemma> lemmasToUpdate = lemmaList.stream()
+            .filter(lemma -> lemma.getFrequency() > 1)
+            .map(lemma -> {
+                lemma.setFrequency(lemma.getFrequency() - 1);
+                return lemma;
+            })
+            .toList();
+
+        lemmaDao.updateList(lemmasToUpdate);
+
         pageDao.delete(page);
         log.info("Очистка таблиц завершена для странички: {}", path);
     }

@@ -40,12 +40,6 @@ public class LemmaDaoImpl implements LemmaDao {
 
     @Override
     @Transactional
-    public void deleteAll() {
-        lemmaRepository.deleteAll();
-    }
-
-    @Override
-    @Transactional
     public List<Lemma> updateList(List<Lemma> lemmaList) {
         return lemmaRepository.saveAll(lemmaList);
     }

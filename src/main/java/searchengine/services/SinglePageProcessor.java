@@ -39,7 +39,7 @@ public class SinglePageProcessor {
     private final LemmaDao lemmaDao;
     private final IndexDao indexDao;
 
-    public Document processSinglePage(String url, SiteEntity siteEntity) throws IOException {
+    public Document processSinglePage(String url, SiteEntity siteEntity, boolean isSingleIndexing) throws IOException {
         Connection.Response response = Jsoup.connect(url)
             .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
             .referrer("http://www.google.com")
@@ -71,11 +71,19 @@ public class SinglePageProcessor {
 
         log.info("Найдено лемм: {} для странички: {}", lemmas.keySet().size(), url);
 
+        List<Lemma> updatedLemmas;
+
+        synchronized (lemmaDao) {
         lemmas.keySet().forEach(lemmaText -> {
-//            Lemma lemma = lemmaDao.findByLemmaAndSite(lemmaText, siteEntity);
-            Lemma lemma = ContextUtils.LEMMA_MAP
-                                        .get(siteEntity.getUrl())
-                                        .get(lemmaText);
+
+            Lemma lemma;
+            if (isSingleIndexing) {
+                lemma = lemmaDao.findByLemmaAndSite(lemmaText, siteEntity);
+            } else {
+                lemma = ContextUtils.LEMMA_MAP
+                    .get(siteEntity.getUrl())
+                    .get(lemmaText);
+            }
 
             if (lemma != null) {
                 lemma.setFrequency(lemma.getFrequency() + 1);
@@ -87,43 +95,31 @@ public class SinglePageProcessor {
                     .build();
             }
 
-//            Lemma updatedLemma = lemmaDao.update(lemma);
             lemmasForUpdate.add(lemma);
-
-//            Index index = Index.builder()
-//                .lemma(updatedLemma)
-//                .page(updatedPage)
-//                .rank(lemmas.get(lemmaText).floatValue())
-//                .build();
-//
-//            indexDao.update(index);
         });
-        List<Lemma> updatedLemmas;
-        synchronized (lemmaDao) {
+
             updatedLemmas = lemmaDao.updateList(lemmasForUpdate);
+            updatedLemmas.forEach(lemma -> ContextUtils.LEMMA_MAP
+                .get(siteEntity.getUrl())
+                .put(lemma.getLemma(), lemma));
         }
 
         List<Index> indexList = updatedLemmas.stream()
             .map(lemma -> Index.builder()
                 .lemma(lemma)
                 .page(updatedPage)
-                .rank(lemmas.get(lemma.getLemma()).floatValue())
+                .rank(lemmas.get(lemma.getLemma()))
                 .build())
             .toList();
         ContextUtils.INDEX_SET.addAll(indexList);
 
-        if (ContextUtils.INDEX_SET.size() > 10000) {
+        if (ContextUtils.INDEX_SET.size() > 10000 || isSingleIndexing) {
             List<Index> indices = ContextUtils.INDEX_SET.stream().toList();
             ContextUtils.INDEX_SET.clear();
             synchronized (lemmaDao) {
                 indexDao.updateList(indices);
             }
         }
-
-
-        updatedLemmas.forEach(lemma -> ContextUtils.LEMMA_MAP
-            .get(siteEntity.getUrl())
-            .put(lemma.getLemma(), lemma));
 
         log.info("Все леммы обработаны и сохранены для странички: {}", url);
         return document;

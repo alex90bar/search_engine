@@ -1,7 +1,6 @@
 package searchengine.services;
 
 import java.io.IOException;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -9,15 +8,10 @@ import java.util.Set;
 import java.util.concurrent.RecursiveAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
 import org.jsoup.UnsupportedMimeTypeException;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import searchengine.dao.PageDao;
-import searchengine.dao.SiteDao;
-import searchengine.dao.model.Page;
 import searchengine.dao.model.SiteEntity;
 import searchengine.utils.ContextUtils;
 
@@ -47,7 +41,7 @@ public class WebSurfer extends RecursiveAction {
             } else {
                 ContextUtils.LINKS_SET.add(url);
 
-                Document document = singlePageProcessor.processSinglePage(url, siteEntity);
+                Document document = singlePageProcessor.processSinglePage(url, siteEntity, false);
 
                 Elements links = document.select("a[href]");
 

@@ -42,12 +42,6 @@ public class SiteDaoImpl implements SiteDao {
 
     @Override
     @Transactional
-    public void deleteAll() {
-        siteRepository.deleteAll();
-    }
-
-    @Override
-    @Transactional
     public SiteEntity update(SiteEntity siteEntity) {
         return siteRepository.save(siteEntity);
     }

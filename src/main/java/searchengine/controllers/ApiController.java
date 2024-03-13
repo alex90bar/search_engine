@@ -8,10 +8,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import searchengine.dao.repository.PageRepository;
 import searchengine.dto.indexing.IndexingResponse;
+import searchengine.dto.search.SearchResponse;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.services.IndexingService;
+import searchengine.services.SearchService;
 import searchengine.services.StatisticsService;
 
 @Slf4j
@@ -22,6 +23,7 @@ public class ApiController {
 
     private final StatisticsService statisticsService;
     private final IndexingService indexingService;
+    private final SearchService searchService;
 
     @GetMapping("/statistics")
     public ResponseEntity<StatisticsResponse> statistics() {
@@ -41,5 +43,14 @@ public class ApiController {
     @PostMapping("/indexPage")
     public ResponseEntity<IndexingResponse> indexPage(@RequestParam(name = "url") String url) {
         return indexingService.indexPage(url);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<SearchResponse> search(
+        @RequestParam(name = "query", required = false) String query,
+        @RequestParam(name = "site", required = false) String site,
+        @RequestParam(name = "offset", required = false) Integer offset,
+        @RequestParam(name = "limit", required = false) Integer limit) {
+        return searchService.search(query, site, offset, limit);
     }
 }

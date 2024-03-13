@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.dao.model.Index;
+import searchengine.dao.model.Lemma;
 import searchengine.dao.model.Page;
 import searchengine.dao.repository.IndexRepository;
 
@@ -42,12 +43,6 @@ public class IndexDaoImpl implements IndexDao {
 
     @Override
     @Transactional
-    public void deleteAll() {
-        indexRepository.deleteAll();
-    }
-
-    @Override
-    @Transactional
     public List<Index> updateList(List<Index> indexList) {
         log.info("Сохраняем индексы, количество: {}", indexList.size());
         List<Index> indices = indexRepository.saveAll(indexList);
@@ -59,5 +54,11 @@ public class IndexDaoImpl implements IndexDao {
     @Transactional(readOnly = true)
     public long getTotalCount() {
         return indexRepository.count();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Index> findByLemma(Lemma lemma) {
+        return indexRepository.findByLemma(lemma);
     }
 }

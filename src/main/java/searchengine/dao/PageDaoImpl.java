@@ -27,12 +27,6 @@ public class PageDaoImpl implements PageDao {
     }
 
     @Override
-    @Transactional
-    public void deleteAll() {
-        pageRepository.deleteAll();
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public List<Page> findAllBySite(SiteEntity site) {
         return pageRepository.findAllBySite(site);

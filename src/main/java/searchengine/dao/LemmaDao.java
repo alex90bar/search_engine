@@ -20,8 +20,6 @@ public interface LemmaDao {
 
     void deleteLemmaList(List<Lemma> lemmaList);
 
-    void deleteAll();
-
     long getTotalCount();
 
     int countLemmasBySite(SiteEntity site);

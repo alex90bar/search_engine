@@ -10,8 +10,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import searchengine.config.Site;
 import searchengine.dao.IndexDao;
-import searchengine.dao.LemmaDao;
-import searchengine.dao.PageDao;
 import searchengine.dao.SiteDao;
 import searchengine.dao.model.Index;
 import searchengine.dao.model.IndexingStatus;
@@ -30,15 +28,12 @@ import searchengine.utils.ContextUtils;
 public class ConcurrentWebSiteProcessor {
 
     private final SiteDao siteDao;
-    private final PageDao pageDao;
     private final IndexDao indexDao;
-    private final LemmaDao lemmaDao;
     private final SinglePageProcessor singlePageProcessor;
 
     @Async("taskExecutor")
     public void processWebSite(Site site) {
 
-//        clearPagesAndSiteData(site);
         log.info("Начинаем процесс индексации... сайт: {}", site.getName());
 
         SiteEntity siteEntity = saveSiteToDatabase(site);
@@ -49,28 +44,6 @@ public class ConcurrentWebSiteProcessor {
 
         finishWebSiteProcessing(siteEntity);
     }
-
-//    private void clearPagesAndSiteData(Site site) {
-//        log.info("Начинаем процесс индексации... сайт: {}", site.getName());
-//
-//        SiteEntity siteEntity = siteDao.getByUrl(site.getUrl());
-//
-//        if (siteEntity != null) {
-//            List<Page> pageList = pageDao.findAllBySite(siteEntity);
-//            pageList.forEach(this::clearLemmasAndIndexesForPage);
-//            long deletedPages = pageDao.deleteAllBySite(siteEntity);
-//            siteDao.deleteById(siteEntity.getId());
-//            log.info("Удалено страничек: {}", deletedPages);
-//        }
-//    }
-//
-//    private void clearLemmasAndIndexesForPage(Page page) {
-//        List<Lemma> lemmaList = new ArrayList<>();
-//        List<Index> indexList = indexDao.findByPage(page);
-//        indexList.forEach(index -> lemmaList.add(index.getLemma()));
-//        indexDao.deleteIndexList(indexList);
-//        lemmaDao.deleteLemmaList(lemmaList);
-//    }
 
     public SiteEntity saveSiteToDatabase(Site site) {
         SiteEntity siteEntity = SiteEntity.builder()
@@ -109,5 +82,3 @@ public class ConcurrentWebSiteProcessor {
     }
 
 }
-
-

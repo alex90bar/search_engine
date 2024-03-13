@@ -21,7 +21,6 @@ public class ContextUtils {
     public static final Set<Index> INDEX_SET = new ConcurrentSkipListSet<>(Comparator.comparing(Index::toString));
     public static final Map<String, ConcurrentHashMap<String, Lemma>> LEMMA_MAP = new ConcurrentHashMap<>();
     public static final AtomicBoolean stopFlag = new AtomicBoolean(false);
-    public static final AtomicBoolean isDatabaseCleanerWorking = new AtomicBoolean(false);
     public static final AtomicBoolean isSinglePageIndexingRunning = new AtomicBoolean(false);
 
 }

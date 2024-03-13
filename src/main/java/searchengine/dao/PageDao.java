@@ -14,8 +14,6 @@ public interface PageDao {
 
     long deleteAllBySite(SiteEntity site);
 
-    void deleteAll();
-
     List<Page> findAllBySite(SiteEntity site);
 
     boolean existsByPath(String path);

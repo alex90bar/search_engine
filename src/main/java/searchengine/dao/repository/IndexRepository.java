@@ -3,6 +3,7 @@ package searchengine.dao.repository;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import searchengine.dao.model.Index;
+import searchengine.dao.model.Lemma;
 import searchengine.dao.model.Page;
 
 /**
@@ -14,5 +15,7 @@ import searchengine.dao.model.Page;
 public interface IndexRepository extends JpaRepository<Index, Integer> {
 
     List<Index> findByPage(Page page);
+
+    List<Index> findByLemma(Lemma lemma);
 
 }

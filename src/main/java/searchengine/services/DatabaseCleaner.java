@@ -3,8 +3,10 @@ package searchengine.services;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import searchengine.config.Site;
 import searchengine.dao.IndexDao;
 import searchengine.dao.LemmaDao;
@@ -27,45 +29,32 @@ public class DatabaseCleaner {
     private final PageDao pageDao;
     private final IndexDao indexDao;
     private final LemmaDao lemmaDao;
-    private final ConcurrentWebSiteProcessor webSiteProcessor;
+    private final JdbcTemplate jdbcTemplate;
 
-    @Async("taskExecutor")
-    public void clearDataAndStartIndexing(List<Site> sites) {
-        ContextUtils.isDatabaseCleanerWorking.set(true);
+    @Transactional
+    public void clearDataAndStartIndexing() {
 
         long indexTotalCount = indexDao.getTotalCount();
         log.info("Начинаем очистку, удаляем индексы, количество: {} ...", indexTotalCount);
-        indexDao.deleteAll();
-
-        if (ContextUtils.stopFlag.get()) {
-            ContextUtils.isDatabaseCleanerWorking.set(false);
-            return;
-        }
+        truncateTable("`index`");
 
         long lemmaTotalCount = lemmaDao.getTotalCount();
         log.info("Удаляем леммы, количество: {} ...", lemmaTotalCount);
-        lemmaDao.deleteAll();
-
-        if (ContextUtils.stopFlag.get()) {
-            ContextUtils.isDatabaseCleanerWorking.set(false);
-            return;
-        }
+        truncateTable("lemma");
 
         long pageTotalCount = pageDao.getTotalCount();
         log.info("Удаляем странички, количество: {} ...", pageTotalCount);
-        pageDao.deleteAll();
+        truncateTable("page");
 
-        if (ContextUtils.stopFlag.get()) {
-            ContextUtils.isDatabaseCleanerWorking.set(false);
-            return;
-        }
 
         long siteTotalCount = siteDao.getTotalCount();
         log.info("Удаляем сайты, количество: {} ...", siteTotalCount);
-        siteDao.deleteAll();
+        truncateTable("site");
+    }
 
-        ContextUtils.isDatabaseCleanerWorking.set(false);
-
-        sites.forEach(webSiteProcessor::processWebSite);
+    private void truncateTable(String tableName) {
+        jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0");
+        jdbcTemplate.execute("TRUNCATE TABLE " + tableName);
+        jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1");
     }
 }

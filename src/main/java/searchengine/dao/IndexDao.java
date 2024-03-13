@@ -2,6 +2,7 @@ package searchengine.dao;
 
 import java.util.List;
 import searchengine.dao.model.Index;
+import searchengine.dao.model.Lemma;
 import searchengine.dao.model.Page;
 
 /**
@@ -20,7 +21,7 @@ public interface IndexDao {
 
     void deleteIndexList(List<Index> indexList);
 
-    void deleteAll();
-
     long getTotalCount();
+
+    List<Index> findByLemma(Lemma lemma);
 }
