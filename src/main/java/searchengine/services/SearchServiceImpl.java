@@ -16,7 +16,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import searchengine.dao.IndexDao;
 import searchengine.dao.LemmaDao;
@@ -50,7 +49,7 @@ public class SearchServiceImpl implements SearchService {
     private final IndexDao indexDao;
 
     @Override
-    public ResponseEntity<SearchResponse> search(String query, String site, Integer offset, Integer limit) {
+    public SearchResponse search(String query, String site, Integer offset, Integer limit) {
         if (StringUtils.isBlank(query))
             return generateErrorResponse(EMPTY_QUERY_ERROR_MESS);
 
@@ -76,7 +75,7 @@ public class SearchServiceImpl implements SearchService {
 
         if (searchDataResultList.isEmpty()) {
             if (lemmasNotFound.isEmpty()) {
-                return ResponseEntity.ok().body(SearchResponse.builder().result(true).count(0).build());
+                return SearchResponse.builder().result(true).count(0).build();
             } else {
                 return generateErrorResponse(String.format(NOT_FOUND_BY_LEMMA_ERROR_MESS, String.join( ", ", lemmasNotFound)));
             }
@@ -84,17 +83,16 @@ public class SearchServiceImpl implements SearchService {
 
         sortResultList(searchDataResultList);
 
-        return ResponseEntity.ok().body(
-            SearchResponse
-                .builder()
-                .result(true)
-                .count(searchDataResultList.size())
-                .data(searchDataResultList.stream().skip(offset).limit(limit).toList())
-                .build());
+        return SearchResponse
+            .builder()
+            .result(true)
+            .count(searchDataResultList.size())
+            .data(searchDataResultList.stream().skip(offset).limit(limit).toList())
+            .build();
     }
 
-    private ResponseEntity<SearchResponse> generateErrorResponse(String error) {
-        return ResponseEntity.badRequest().body(SearchResponse.builder().result(false).error(error).build());
+    private SearchResponse generateErrorResponse(String error) {
+        return SearchResponse.builder().result(false).error(error).build();
     }
 
     private Integer calculateLimit(Integer limit) {

@@ -1,6 +1,5 @@
 package searchengine.services;
 
-import org.springframework.http.ResponseEntity;
 import searchengine.dto.search.SearchResponse;
 
 /**
@@ -11,5 +10,5 @@ import searchengine.dto.search.SearchResponse;
 
 public interface SearchService {
 
-    ResponseEntity<SearchResponse> search(String query, String site, Integer offset, Integer limit);
+    SearchResponse search(String query, String site, Integer offset, Integer limit);
 }

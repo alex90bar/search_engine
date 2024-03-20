@@ -50,7 +50,12 @@ public class ApiController {
         @RequestParam(name = "query", required = false) String query,
         @RequestParam(name = "site", required = false) String site,
         @RequestParam(name = "offset", required = false) Integer offset,
-        @RequestParam(name = "limit", required = false) Integer limit) {
-        return searchService.search(query, site, offset, limit);
+        @RequestParam(name = "limit", required = false) Integer limit
+    ) {
+        SearchResponse searchResponse = searchService.search(query, site, offset, limit);
+        if (searchResponse.isResult()) {
+            return ResponseEntity.ok().body(searchResponse);
+        }
+        return ResponseEntity.badRequest().body(searchResponse);
     }
 }
