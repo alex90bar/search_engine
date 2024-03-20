@@ -51,27 +51,28 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public ResponseEntity<SearchResponse> search(String query, String site, Integer offset, Integer limit) {
-        if (StringUtils.isBlank(query)) {
-            return ResponseEntity.badRequest().body(SearchResponse.builder().result(false).error(EMPTY_QUERY_ERROR_MESS).build());
-        }
+        if (StringUtils.isBlank(query))
+            return generateErrorResponse(EMPTY_QUERY_ERROR_MESS);
 
         offset = calculateOffset(offset);
         limit = calculateLimit(limit);
 
-        Map<String, Integer> lemmasMap = lemmaProcessor.extractLemmasFromContent(query);
-        Set<String> lemmasKeySet = lemmasMap.keySet();
+        Map<String, Integer> lemmasFromQueryMap = lemmaProcessor.extractLemmasFromContent(query);
+        Set<String> lemmasFromQuerySet = lemmasFromQueryMap.keySet();
 
-        log.info("Леммы: {}", lemmasKeySet);
+        log.info("Леммы: {}", lemmasFromQuerySet);
 
-        if (lemmasKeySet.isEmpty()) return generateErrorResponse(BAD_QUERY_ERROR_MESS);
+        if (lemmasFromQuerySet.isEmpty())
+            return generateErrorResponse(BAD_QUERY_ERROR_MESS);
 
-        List<SiteEntity> sites = fillSitesData(site);
+        List<SiteEntity> sites = prepareSitesData(site);
 
-        if (sites.isEmpty()) return generateErrorResponse(WRONG_SITE_ERROR_MESS);
+        if (sites.isEmpty())
+            return generateErrorResponse(WRONG_SITE_ERROR_MESS);
 
         Set<String> lemmasNotFound = new HashSet<>();
 
-        List<SearchData> searchDataResultList = searchDataByLemmasAndSites(lemmasNotFound, sites, lemmasKeySet);
+        List<SearchData> searchDataResultList = searchDataByLemmasAndSites(lemmasNotFound, sites, lemmasFromQuerySet);
 
         if (searchDataResultList.isEmpty()) {
             if (lemmasNotFound.isEmpty()) {
@@ -104,7 +105,7 @@ public class SearchServiceImpl implements SearchService {
         return offset == null || offset < 0 ? 0 : offset;
     }
 
-    private List<SiteEntity> fillSitesData(String site) {
+    private List<SiteEntity> prepareSitesData(String site) {
         List<SiteEntity> sites;
         if (StringUtils.isBlank(site)) {
             sites = siteDao.getAll();
@@ -121,45 +122,29 @@ public class SearchServiceImpl implements SearchService {
         return sites;
     }
 
-    private List<SearchData> searchDataByLemmasAndSites(Set<String> lemmasNotFound, List<SiteEntity> sites, Set<String> lemmasKeySet) {
+    private List<SearchData> searchDataByLemmasAndSites(Set<String> lemmasNotFound, List<SiteEntity> sites, Set<String> lemmasFromQuerySet) {
         List<SearchData> searchDataResultList = new ArrayList<>();
-        log.info("Список сайтов для поиска: {}", sites);
+        log.info("Список сайтов для поиска: {}", sites.stream().map(SiteEntity::getUrl).toList());
 
         for (SiteEntity siteEntity : sites) {
             log.info("Ищем по сайту: {}", siteEntity.getName());
 
             ArrayList<Lemma> lemmaList = new ArrayList<>();
 
-            findLemmasBySiteInDb(lemmasNotFound, lemmasKeySet, siteEntity, lemmaList);
+            findLemmasBySiteInDb(lemmasNotFound, lemmasFromQuerySet, siteEntity, lemmaList);
 
-            if (lemmasKeySet.size() == lemmaList.size()) {
+            /* проверка, найдены ли все слова из поискового запроса */
+            if (lemmasFromQuerySet.size() == lemmaList.size()) {
                 lemmaList.sort(Comparator.comparingInt(Lemma::getFrequency));
 
-                log.info("Список лемм: {}", lemmaList);
+                log.debug("Список лемм: {}", lemmaList);
 
                 List<Index> filteredIndexes = findIndexesByLemmaAndFilterIndexesByPage(lemmaList);
 
                 if (!filteredIndexes.isEmpty()) {
-                    Map<Page, Integer> pageAbsRelevanceMap = filteredIndexes.stream()
-                        .collect(Collectors.groupingBy(Index::getPage,
-                            Collectors.mapping(Index::getRank, Collectors.summingInt(Integer::intValue))));
 
-                    log.info("Мапа абсолютной релевантности: {}", pageAbsRelevanceMap.values());
-                    Integer maxAbsRelevance = Collections.max(pageAbsRelevanceMap.values());
-                    log.info("Максимальная абсолютная релевантность: {}", maxAbsRelevance);
+                    searchDataResultList.addAll(calculateAbsoluteRelevanceAndGenerateResultList(filteredIndexes, siteEntity, lemmasFromQuerySet));
 
-                    for (Entry<Page, Integer> entry : pageAbsRelevanceMap.entrySet()) {
-                        Page page = entry.getKey();
-                        SearchData searchData = SearchData.builder()
-                            .site(siteEntity.getUrl())
-                            .siteName(siteEntity.getName())
-                            .uri(page.getPath().substring(siteEntity.getUrl().length()))
-                            .title(getPageTitle(page.getContent()))
-                            .snippet(getPageSnippet(page.getContent(), lemmasKeySet))
-                            .relevance(calculateRelevance(maxAbsRelevance, entry.getValue()))
-                            .build();
-                        searchDataResultList.add(searchData);
-                    }
                 }
             }
         }
@@ -181,7 +166,9 @@ public class SearchServiceImpl implements SearchService {
      * Метод производит поиск индексов по списку лемм,
      * считает количество страниц, на которой встречается каждый из индексов,
      * фильтрует список индексов,
-     * оставляет только те страницы, на которых встречаются все леммы из списка
+     * оставляет только те страницы, на которых встречаются все леммы из списка.
+     *
+     * Если после поиска не остаётся таких страниц - возвращает пустой список.
      *
      * @param lemmaList список лемм
      * @return список индексов List<Index>
@@ -202,10 +189,35 @@ public class SearchServiceImpl implements SearchService {
             .filter(index -> pageIdCountMap.get(index.getPage().getId()) != null && pageIdCountMap.get(index.getPage().getId()) == lemmaList.size())
             .toList();
 
-        log.info("Список индексов: {}", filteredIndexes.stream().map(Index::getId).toList());
-        log.info("Список значения rank по индексам: {}", filteredIndexes.stream().map(Index::getRank).toList());
-        log.info("Список страниц: {}", filteredIndexes.stream().map(Index::getPage).map(Page::getId).toList());
+        log.debug("Список индексов: {}", filteredIndexes.stream().map(Index::getId).toList());
+        log.debug("Список значения rank по индексам: {}", filteredIndexes.stream().map(Index::getRank).toList());
+        log.debug("Список страниц: {}", filteredIndexes.stream().map(Index::getPage).map(Page::getId).toList());
         return filteredIndexes;
+    }
+
+    private List<SearchData> calculateAbsoluteRelevanceAndGenerateResultList(List<Index> filteredIndexes, SiteEntity siteEntity, Set<String> lemmasKeySet) {
+        List<SearchData> searchDataResultList = new ArrayList<>();
+        Map<Page, Integer> pageAbsRelevanceMap = filteredIndexes.stream()
+            .collect(Collectors.groupingBy(Index::getPage,
+                Collectors.mapping(Index::getRank, Collectors.summingInt(Integer::intValue))));
+
+        log.debug("Мапа абсолютной релевантности: {}", pageAbsRelevanceMap.values());
+        Integer maxAbsRelevance = Collections.max(pageAbsRelevanceMap.values());
+        log.debug("Максимальная абсолютная релевантность: {}", maxAbsRelevance);
+
+        for (Entry<Page, Integer> entry : pageAbsRelevanceMap.entrySet()) {
+            Page page = entry.getKey();
+            SearchData searchData = SearchData.builder()
+                .site(siteEntity.getUrl())
+                .siteName(siteEntity.getName())
+                .uri(page.getPath().substring(siteEntity.getUrl().length()))
+                .title(getPageTitle(page.getContent()))
+                .snippet(getPageSnippet(page.getContent(), lemmasKeySet))
+                .relevance(calculateRelevance(maxAbsRelevance, entry.getValue()))
+                .build();
+            searchDataResultList.add(searchData);
+        }
+        return searchDataResultList;
     }
 
     private double calculateRelevance(Integer maxAbsRelevance, Integer pageRelevance) {
@@ -213,8 +225,9 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private String getPageSnippet(String pageContent, Set<String> lemmaSet) {
-        /* TODO: написать метод для формирования сниппета */
-        return String.format("Отрывок текста, содержащий леммы: %s", lemmaSet);
+        Document doc = Jsoup.parse(pageContent);
+        String docBody = doc.text();
+        return lemmaProcessor.generateSnippet(docBody, lemmaSet);
     }
 
 
@@ -229,14 +242,14 @@ public class SearchServiceImpl implements SearchService {
         if (!h1Elements.isEmpty()) {
             Element h1Element = h1Elements.first();
             String h1Title = h1Element.text();
-            log.info("Заголовок в <h1>: {}", h1Title);
+            log.debug("Заголовок в <h1>: {}", h1Title);
             return h1Title;
         }
 
         Element metaTitleElement = doc.select("meta[name=title]").first();
         if (metaTitleElement != null) {
             String metaTitle = metaTitleElement.attr("content");
-            log.info("Заголовок в <meta name=title>: {}", metaTitle);
+            log.debug("Заголовок в <meta name=title>: {}", metaTitle);
             return metaTitle;
         }
 
