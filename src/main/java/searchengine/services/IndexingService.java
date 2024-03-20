@@ -1,6 +1,5 @@
 package searchengine.services;
 
-import org.springframework.http.ResponseEntity;
 import searchengine.dto.indexing.IndexingResponse;
 
 /**
@@ -11,11 +10,11 @@ import searchengine.dto.indexing.IndexingResponse;
 
 public interface IndexingService {
 
-    ResponseEntity<IndexingResponse> startIndexing();
+    IndexingResponse startIndexing();
 
-    ResponseEntity<IndexingResponse> stopIndexing();
+    IndexingResponse stopIndexing();
 
-    ResponseEntity<IndexingResponse> indexPage(String url);
+    IndexingResponse indexPage(String url);
 }
 
 

@@ -22,6 +22,7 @@ public class ContextUtils {
     public static final Map<String, ConcurrentHashMap<String, Lemma>> LEMMA_MAP = new ConcurrentHashMap<>();
     public static final AtomicBoolean stopFlag = new AtomicBoolean(false);
     public static final AtomicBoolean isSinglePageIndexingRunning = new AtomicBoolean(false);
+    public static final AtomicBoolean isFullIndexingStarted = new AtomicBoolean(false);
 
 }
 

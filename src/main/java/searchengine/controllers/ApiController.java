@@ -32,17 +32,17 @@ public class ApiController {
 
     @GetMapping("/startIndexing")
     public ResponseEntity<IndexingResponse> startIndexing() {
-        return indexingService.startIndexing();
+        return generateResponse(indexingService.startIndexing());
     }
 
     @GetMapping("/stopIndexing")
     public ResponseEntity<IndexingResponse> stopIndexing() {
-        return indexingService.stopIndexing();
+        return generateResponse(indexingService.stopIndexing());
     }
 
     @PostMapping("/indexPage")
     public ResponseEntity<IndexingResponse> indexPage(@RequestParam(name = "url") String url) {
-        return indexingService.indexPage(url);
+        return generateResponse(indexingService.indexPage(url));
     }
 
     @GetMapping("/search")
@@ -57,5 +57,12 @@ public class ApiController {
             return ResponseEntity.ok().body(searchResponse);
         }
         return ResponseEntity.badRequest().body(searchResponse);
+    }
+
+    private ResponseEntity<IndexingResponse> generateResponse(IndexingResponse indexingResponse) {
+        if (indexingResponse.isResult()) {
+            return ResponseEntity.ok().body(indexingResponse);
+        }
+        return ResponseEntity.badRequest().body(indexingResponse);
     }
 }

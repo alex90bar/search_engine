@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.UnsupportedMimeTypeException;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
@@ -52,53 +51,57 @@ public class IndexingServiceImpl implements IndexingService {
     private static final String SINGLE_PAGE_INDEXING_ERROR_MESS = "Ошибка индексации странички";
 
     @Override
-    public ResponseEntity<IndexingResponse> startIndexing() {
+    public IndexingResponse startIndexing() {
         List<Site> sites = sitesList.getSites();
 
         if (checkIndexingUtil.checkIsIndexingRunning(sites) || ContextUtils.isSinglePageIndexingRunning.get()) {
-            return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(INDEXING_IS_RUNNING_MESS).build());
+            return generateErrorResponse(INDEXING_IS_RUNNING_MESS);
         }
 
         ContextUtils.LINKS_SET.clear();
         ContextUtils.INDEX_SET.clear();
         ContextUtils.LEMMA_MAP.clear();
         ContextUtils.stopFlag.set(false);
+        ContextUtils.isFullIndexingStarted.set(true);
 
         databaseCleaner.clearDataAndStartIndexing();
 
         sites.forEach(webSiteProcessor::processWebSite);
 
-        return ResponseEntity.ok(IndexingResponse.builder().result(true).build());
+        return generateSuccessResponse();
     }
 
     @Override
-    public ResponseEntity<IndexingResponse> stopIndexing() {
+    public IndexingResponse stopIndexing() {
         List<Site> sites = sitesList.getSites();
 
         if (!checkIndexingUtil.checkIsIndexingRunning(sites)) {
-            return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(INDEXING_IS_NOT_RUNNING_MESS).build());
+            return generateErrorResponse(INDEXING_IS_NOT_RUNNING_MESS);
         }
 
         ContextUtils.stopFlag.set(true);
 
-        changeDbStatusToFailed(sites);
+        /* условие срабатывает при экстренном закрытии программы во время индексации, устанавливает для сайтов статус FAILED */
+        if (!ContextUtils.isFullIndexingStarted.get()) {
+            changeDbStatusToFailed(sites);
+        }
 
         log.info("Получена команда на остановку индексации...");
 
-        return ResponseEntity.ok(IndexingResponse.builder().result(true).build());
+        return generateSuccessResponse();
     }
 
     @Override
-    public ResponseEntity<IndexingResponse> indexPage(String url) {
+    public IndexingResponse indexPage(String url) {
         List<Site> sites = sitesList.getSites();
 
         if (checkIndexingUtil.checkIsIndexingRunning(sites) || ContextUtils.isSinglePageIndexingRunning.get()) {
-            return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(INDEXING_IS_RUNNING_MESS).build());
+            return generateErrorResponse(INDEXING_IS_RUNNING_MESS);
         }
 
         Site site = checkUrlForIndexing(url);
         if (site == null) {
-            return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(INCORRECT_URL_FOR_INDEXING_MESS).build());
+            return generateErrorResponse(INCORRECT_URL_FOR_INDEXING_MESS);
         }
 
         ContextUtils.isSinglePageIndexingRunning.set(true);
@@ -119,17 +122,17 @@ public class IndexingServiceImpl implements IndexingService {
         } catch (UnsupportedMimeTypeException e) {
             log.debug("Не поддерживаемый тип гиперссылки, индексируем только html-странички, url: {} текст ошибки: {}", url, e.getMessage());
             ContextUtils.isSinglePageIndexingRunning.set(false);
-            return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(INCORRECT_URL_TYPE_FOR_INDEXING_MESS).build());
+            return generateErrorResponse(INCORRECT_URL_TYPE_FOR_INDEXING_MESS);
         } catch (IOException e) {
             log.error("Ошибка индексации странички {} : {}", url, e.getMessage(), e);
             ContextUtils.isSinglePageIndexingRunning.set(false);
-            return ResponseEntity.badRequest().body(IndexingResponse.builder().result(false).error(SINGLE_PAGE_INDEXING_ERROR_MESS).build());
+            return generateErrorResponse(SINGLE_PAGE_INDEXING_ERROR_MESS);
         }
 
         siteDao.setStatusFailed(siteEntity);
 
         ContextUtils.isSinglePageIndexingRunning.set(false);
-        return ResponseEntity.ok(IndexingResponse.builder().result(true).build());
+        return generateSuccessResponse();
     }
 
     private void clearLemmasAndIndexesForPage(String path) {
@@ -174,6 +177,15 @@ public class IndexingServiceImpl implements IndexingService {
             .findFirst()
             .orElse(null);
     }
+
+    private IndexingResponse generateErrorResponse(String error) {
+        return IndexingResponse.builder().result(false).error(error).build();
+    }
+
+    private IndexingResponse generateSuccessResponse() {
+        return IndexingResponse.builder().result(true).build();
+    }
+
 }
 
 
