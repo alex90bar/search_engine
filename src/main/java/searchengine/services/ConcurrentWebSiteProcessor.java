@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import searchengine.config.Site;
 import searchengine.dao.IndexDao;
+import searchengine.dao.LemmaDao;
 import searchengine.dao.SiteDao;
 import searchengine.dao.model.Index;
 import searchengine.dao.model.IndexingStatus;
@@ -29,6 +30,7 @@ public class ConcurrentWebSiteProcessor {
 
     private final SiteDao siteDao;
     private final IndexDao indexDao;
+    private final LemmaDao lemmaDao;
     private final SinglePageProcessor singlePageProcessor;
 
     @Async("taskExecutor")
@@ -63,17 +65,19 @@ public class ConcurrentWebSiteProcessor {
     }
 
     private void finishWebSiteProcessing(SiteEntity siteEntity) {
-        if (ContextUtils.stopFlag.get()) {
-            log.info("Останавливаем индексацию... сайт: {}", siteEntity.getName());
-            siteDao.setStatusFailed(siteEntity);
-        } else {
-            siteEntity.setStatus(IndexingStatus.INDEXED);
-            siteDao.update(siteEntity);
+        synchronized (lemmaDao) {
+            if (ContextUtils.stopFlag.get()) {
+                log.info("Останавливаем индексацию... сайт: {}", siteEntity.getName());
+                siteDao.setStatusFailed(siteEntity);
+            } else {
+                siteEntity.setStatus(IndexingStatus.INDEXED);
+                siteDao.update(siteEntity);
+            }
         }
 
         List<Index> indices = ContextUtils.INDEX_SET.stream().toList();
         ContextUtils.INDEX_SET.clear();
-        synchronized (indexDao) {
+        synchronized (lemmaDao) {
             indexDao.updateList(indices);
         }
 
