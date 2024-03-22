@@ -1,25 +1,25 @@
-#SearchEngine
+# SearchEngine
 
-##Описание проекта
+## Описание проекта
 SearchEngine - это учебный проект на Java и SpringBoot.
 
 Он представляет собой поисковый движок для осуществления индексации страниц веб-сайтов и дальнейшего поиска по проиндексированным страницам.
 
 Веб-интерфейс (frontend-составляющая) проекта представляет собой одну веб-страницу с тремя вкладками:
 
-###Dashboard. 
+### Dashboard. 
 Эта вкладка открывается по умолчанию. На ней отображается общая статистика по всем сайтам, а также детальная статистика и статус по каждому из сайтов (статистика, получаемая по запросу /api/statistics).
 
 <p align="center"><img  src="/readme_assets/dashboard.png" width="50%"></p>
 
 
-###Management. 
+### Management. 
 На этой вкладке находятся инструменты управления поисковым движком — запуск и остановка полной индексации (переиндексации), а также возможность добавить (обновить) отдельную страницу по ссылке:
 
 <p align="center"><img  src="/readme_assets/management.png" width="50%"></p>
 
 
-###Search. 
+### Search. 
 Эта страница предназначена для тестирования поискового движка. На ней находится поле поиска, выпадающий список с выбором сайта для поиска, а при нажатии на кнопку «Найти» выводятся результаты поиска (по API-запросу /api/search):
 
 <p align="center"><img  src="/readme_assets/search.png" width="70%"></p>
@@ -28,12 +28,12 @@ SearchEngine - это учебный проект на Java и SpringBoot.
 Вся информация на вкладки подгружается путём запросов к API приложения. При нажатии кнопок также отправляются запросы.
 
 
-##Стек используемых технологий
+## Стек используемых технологий
 `Java 17` `Spring Boot` `REST API` `Spring Data' 'JDBC-JPA-Hibernate` `MySQL` `Multithreading` `Apache Lucene Morphology` `JSOUP` `Lombok` `Maven` `Thymeleaf`
 
 
 
-##Запуск проекта.
+## Запуск проекта.
 
 Для запуска необходимы: 
 
@@ -44,10 +44,13 @@ SearchEngine - это учебный проект на Java и SpringBoot.
 
 для запуска окружения (БД):
 
-`docker-compose up -d`
+```
+docker-compose up -d
+```
 
 для запуска проекта:
 
-`mvn clean install`
-
-`java -jar target/SearchEngine-1.0-SNAPSHOT.jar`
+```
+mvn clean install
+java -jar target/SearchEngine-1.0-SNAPSHOT.jar
+```
