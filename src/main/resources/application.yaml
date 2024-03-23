@@ -20,6 +20,7 @@ spring:
 # для запуска в режиме отладки
 #    show-sql: true
 
+# здесь прописываем url и названия сайтов, по которым будет проводиться индексация
 indexing-settings:
   sites:
     - url: https://www.playback.ru/
