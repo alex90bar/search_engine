@@ -10,18 +10,19 @@ import org.jsoup.UnsupportedMimeTypeException;
 import org.springframework.stereotype.Service;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
-import searchengine.dao.IndexDao;
-import searchengine.dao.LemmaDao;
-import searchengine.dao.PageDao;
-import searchengine.dao.SiteDao;
 import searchengine.dao.model.Index;
 import searchengine.dao.model.IndexingStatus;
 import searchengine.dao.model.Lemma;
 import searchengine.dao.model.Page;
 import searchengine.dao.model.SiteEntity;
+import searchengine.dao.repository.IndexRepository;
+import searchengine.dao.repository.LemmaRepository;
+import searchengine.dao.repository.PageRepository;
+import searchengine.dao.repository.SiteRepository;
 import searchengine.dto.indexing.IndexingResponse;
 import searchengine.utils.CheckIndexingUtil;
 import searchengine.utils.ContextUtils;
+import searchengine.utils.DatabaseUtil;
 
 /**
  * IndexingServiceImpl
@@ -34,10 +35,11 @@ import searchengine.utils.ContextUtils;
 @RequiredArgsConstructor
 public class IndexingServiceImpl implements IndexingService {
 
-    private final SiteDao siteDao;
-    private final PageDao pageDao;
-    private final IndexDao indexDao;
-    private final LemmaDao lemmaDao;
+    private final SiteRepository siteRepository;
+    private final PageRepository pageRepository;
+    private final DatabaseUtil databaseUtil;
+    private final IndexRepository indexRepository;
+    private final LemmaRepository lemmaRepository;
     private final SitesList sitesList;
     private final DatabaseCleaner databaseCleaner;
     private final ConcurrentWebSiteProcessor webSiteProcessor;
@@ -106,11 +108,11 @@ public class IndexingServiceImpl implements IndexingService {
 
         ContextUtils.isSinglePageIndexingRunning.set(true);
 
-        SiteEntity siteEntity = siteDao.getByUrl(site.getUrl());
+        SiteEntity siteEntity = siteRepository.findByUrl(site.getUrl());
         if (siteEntity == null) {
             siteEntity = webSiteProcessor.saveSiteToDatabase(site);
         } else {
-            if (pageDao.existsByPath(url)) {
+            if (pageRepository.existsByPath(url)) {
                 clearLemmasAndIndexesForPage(url);
             }
         }
@@ -129,7 +131,7 @@ public class IndexingServiceImpl implements IndexingService {
             return generateErrorResponse(SINGLE_PAGE_INDEXING_ERROR_MESS);
         }
 
-        siteDao.setStatusFailed(siteEntity);
+        databaseUtil.setStatusFailedForSite(siteEntity);
 
         ContextUtils.isSinglePageIndexingRunning.set(false);
         return generateSuccessResponse();
@@ -137,17 +139,17 @@ public class IndexingServiceImpl implements IndexingService {
 
     private void clearLemmasAndIndexesForPage(String path) {
         log.info("Начинаем очистку таблиц page, lemma и index для странички: {}", path);
-        Page page = pageDao.findByPath(path);
+        Page page = pageRepository.findByPath(path);
         List<Lemma> lemmaList = new ArrayList<>();
-        List<Index> indexList = indexDao.findByPage(page);
+        List<Index> indexList = indexRepository.findByPage(page);
         indexList.forEach(index -> lemmaList.add(index.getLemma()));
-        indexDao.deleteIndexList(indexList);
+        indexRepository.deleteAll(indexList);
 
         List<Lemma> lemmasToDelete = lemmaList.stream()
             .filter(lemma -> lemma.getFrequency() == 1)
             .toList();
 
-        lemmaDao.deleteLemmaList(lemmasToDelete);
+        lemmaRepository.deleteAll(lemmasToDelete);
 
         List<Lemma> lemmasToUpdate = lemmaList.stream()
             .filter(lemma -> lemma.getFrequency() > 1)
@@ -157,17 +159,17 @@ public class IndexingServiceImpl implements IndexingService {
             })
             .toList();
 
-        lemmaDao.updateList(lemmasToUpdate);
+        lemmaRepository.saveAll(lemmasToUpdate);
 
-        pageDao.delete(page);
+        pageRepository.delete(page);
         log.info("Очистка таблиц завершена для странички: {}", path);
     }
 
     private void changeDbStatusToFailed(List<Site> sites) {
         sites.stream()
-            .map(site -> siteDao.getByUrl(site.getUrl()))
+            .map(site -> siteRepository.findByUrl(site.getUrl()))
             .filter(siteEntity -> siteEntity != null && IndexingStatus.INDEXING.equals(siteEntity.getStatus()))
-            .forEach(siteDao::setStatusFailed);
+            .forEach(databaseUtil::setStatusFailedForSite);
     }
 
     private Site checkUrlForIndexing(String url) {

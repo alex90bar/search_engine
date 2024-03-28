@@ -11,16 +11,16 @@ import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
-import searchengine.dao.IndexDao;
-import searchengine.dao.LemmaDao;
-import searchengine.dao.PageDao;
-import searchengine.dao.SiteDao;
 import searchengine.dao.model.Index;
 import searchengine.dao.model.IndexingStatus;
 import searchengine.dao.model.Lemma;
 import searchengine.dao.model.Page;
 import searchengine.dao.model.SiteEntity;
+import searchengine.dao.repository.LemmaRepository;
+import searchengine.dao.repository.PageRepository;
+import searchengine.dao.repository.SiteRepository;
 import searchengine.utils.ContextUtils;
+import searchengine.utils.DatabaseUtil;
 
 /**
  * SinglePageProcessor
@@ -33,11 +33,11 @@ import searchengine.utils.ContextUtils;
 @RequiredArgsConstructor
 public class SinglePageProcessor {
 
-    private final SiteDao siteDao;
-    private final PageDao pageDao;
+    private final SiteRepository siteRepository;
+    private final PageRepository pageRepository;
+    private final LemmaRepository lemmaRepository;
     private final LemmaProcessor lemmaProcessor;
-    private final LemmaDao lemmaDao;
-    private final IndexDao indexDao;
+    private final DatabaseUtil databaseUtil;
 
     public Document processSinglePage(String url, SiteEntity siteEntity, boolean isSingleIndexing) throws IOException {
         Connection.Response response = Jsoup.connect(url)
@@ -57,11 +57,11 @@ public class SinglePageProcessor {
             .build();
 
         Page updatedPage;
-        synchronized (lemmaDao) {
-            updatedPage = pageDao.update(page);
+        synchronized (lemmaRepository) {
+            updatedPage = pageRepository.save(page);
             siteEntity.setStatusTime(ZonedDateTime.now());
             siteEntity.setStatus(IndexingStatus.INDEXING);
-            siteDao.update(siteEntity);
+            siteRepository.save(siteEntity);
         }
 
 
@@ -73,12 +73,12 @@ public class SinglePageProcessor {
 
         List<Lemma> updatedLemmas;
 
-        synchronized (lemmaDao) {
+        synchronized (lemmaRepository) {
         lemmas.keySet().forEach(lemmaText -> {
 
             Lemma lemma;
             if (isSingleIndexing) {
-                lemma = lemmaDao.findByLemmaAndSite(lemmaText, siteEntity);
+                lemma = lemmaRepository.findByLemmaAndSite(lemmaText, siteEntity);
             } else {
                 lemma = ContextUtils.LEMMA_MAP
                     .get(siteEntity.getUrl())
@@ -98,7 +98,7 @@ public class SinglePageProcessor {
             lemmasForUpdate.add(lemma);
         });
 
-            updatedLemmas = lemmaDao.updateList(lemmasForUpdate);
+            updatedLemmas = lemmaRepository.saveAll(lemmasForUpdate);
             updatedLemmas.forEach(lemma -> ContextUtils.LEMMA_MAP
                 .get(siteEntity.getUrl())
                 .put(lemma.getLemma(), lemma));
@@ -116,8 +116,8 @@ public class SinglePageProcessor {
         if (ContextUtils.INDEX_SET.size() > 10000 || isSingleIndexing) {
             List<Index> indices = ContextUtils.INDEX_SET.stream().toList();
             ContextUtils.INDEX_SET.clear();
-            synchronized (lemmaDao) {
-                indexDao.updateList(indices);
+            synchronized (lemmaRepository) {
+                databaseUtil.updateIndexList(indices);
             }
         }
 

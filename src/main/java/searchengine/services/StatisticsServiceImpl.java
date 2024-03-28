@@ -4,10 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.apache.commons.lang3.StringUtils;
 import searchengine.config.SitesList;
-import searchengine.dao.LemmaDao;
-import searchengine.dao.PageDao;
-import searchengine.dao.SiteDao;
 import searchengine.dao.model.SiteEntity;
+import searchengine.dao.repository.LemmaRepository;
+import searchengine.dao.repository.PageRepository;
+import searchengine.dao.repository.SiteRepository;
 import searchengine.dto.statistics.DetailedStatisticsItem;
 import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
@@ -23,17 +23,17 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     private final SitesList sites;
     private final CheckIndexingUtil checkIndexingUtil;
-    private final PageDao pageDao;
-    private final LemmaDao lemmaDao;
-    private final SiteDao siteDao;
+    private final SiteRepository siteRepository;
+    private final PageRepository pageRepository;
+    private final LemmaRepository lemmaRepository;
 
     @Override
     public StatisticsResponse getStatistics() {
         TotalStatistics total = new TotalStatistics();
-        List<SiteEntity> allSites = siteDao.getAll();
+        List<SiteEntity> allSites = siteRepository.findAll();
         total.setSites(allSites.size());
-        total.setPages(Math.toIntExact(pageDao.getTotalCount()));
-        total.setLemmas(Math.toIntExact(lemmaDao.getTotalCount()));
+        total.setPages(Math.toIntExact(pageRepository.count()));
+        total.setLemmas(Math.toIntExact(lemmaRepository.count()));
         total.setIndexing(checkIndexingUtil.checkIsIndexingRunning(sites.getSites()));
 
 
@@ -45,8 +45,8 @@ public class StatisticsServiceImpl implements StatisticsService {
             item.setStatus(siteEntity.getStatus().name());
             item.setStatusTime(siteEntity.getStatusTime().toEpochSecond() * 1000);
             item.setError(StringUtils.defaultString(siteEntity.getLastError()));
-            item.setPages(pageDao.countPagesBySite(siteEntity));
-            item.setLemmas(lemmaDao.countLemmasBySite(siteEntity));
+            item.setPages(pageRepository.countPagesBySite(siteEntity));
+            item.setLemmas(lemmaRepository.countLemmaBySite(siteEntity));
             detailed.add(item);
         });
 

@@ -17,13 +17,13 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
-import searchengine.dao.IndexDao;
-import searchengine.dao.LemmaDao;
-import searchengine.dao.SiteDao;
 import searchengine.dao.model.Index;
 import searchengine.dao.model.Lemma;
 import searchengine.dao.model.Page;
 import searchengine.dao.model.SiteEntity;
+import searchengine.dao.repository.IndexRepository;
+import searchengine.dao.repository.LemmaRepository;
+import searchengine.dao.repository.SiteRepository;
 import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchResponse;
 
@@ -44,9 +44,9 @@ public class SearchServiceImpl implements SearchService {
     private static final String NOT_FOUND_BY_LEMMA_ERROR_MESS = "Не найдено страниц по словам: %s";
 
     private final LemmaProcessor lemmaProcessor;
-    private final SiteDao siteDao;
-    private final LemmaDao lemmaDao;
-    private final IndexDao indexDao;
+    private final SiteRepository siteRepository;
+    private final LemmaRepository lemmaRepository;
+    private final IndexRepository indexRepository;
 
     @Override
     public SearchResponse search(String query, String site, Integer offset, Integer limit) {
@@ -106,12 +106,12 @@ public class SearchServiceImpl implements SearchService {
     private List<SiteEntity> prepareSitesData(String site) {
         List<SiteEntity> sites;
         if (StringUtils.isBlank(site)) {
-            sites = siteDao.getAll();
+            sites = siteRepository.findAll();
             if (sites.isEmpty()) {
                 return Collections.emptyList();
             }
         } else {
-            SiteEntity siteEntity = siteDao.getByUrl(site);
+            SiteEntity siteEntity = siteRepository.findByUrl(site);
             if (siteEntity == null) {
                 return Collections.emptyList();
             }
@@ -151,7 +151,7 @@ public class SearchServiceImpl implements SearchService {
 
     private void findLemmasBySiteInDb(Set<String> lemmasNotFound, Set<String> lemmasKeySet, SiteEntity siteEntity, ArrayList<Lemma> lemmaList) {
         for (String lemma : lemmasKeySet) {
-            Lemma byLemmaAndSite = lemmaDao.findByLemmaAndSite(lemma, siteEntity);
+            Lemma byLemmaAndSite = lemmaRepository.findByLemmaAndSite(lemma, siteEntity);
             if (byLemmaAndSite == null) {
                 lemmasNotFound.add(lemma);
             } else {
@@ -175,7 +175,7 @@ public class SearchServiceImpl implements SearchService {
     private List<Index> findIndexesByLemmaAndFilterIndexesByPage(List<Lemma> lemmaList) {
         List<Index> allIndexes = new ArrayList<>();
         for (Lemma lemma : lemmaList) {
-            List<Index> indexesByLemma = indexDao.findByLemma(lemma);
+            List<Index> indexesByLemma = indexRepository.findByLemma(lemma);
             allIndexes.addAll(indexesByLemma);
         }
 
