@@ -2,7 +2,6 @@ package searchengine.controllers;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,43 +25,32 @@ public class ApiController {
     private final SearchService searchService;
 
     @GetMapping("/statistics")
-    public ResponseEntity<StatisticsResponse> statistics() {
-        return ResponseEntity.ok(statisticsService.getStatistics());
+    public StatisticsResponse statistics() {
+        return statisticsService.getStatistics();
     }
 
     @GetMapping("/startIndexing")
-    public ResponseEntity<IndexingResponse> startIndexing() {
-        return generateResponse(indexingService.startIndexing());
+    public IndexingResponse startIndexing() {
+        return indexingService.startIndexing();
     }
 
     @GetMapping("/stopIndexing")
-    public ResponseEntity<IndexingResponse> stopIndexing() {
-        return generateResponse(indexingService.stopIndexing());
+    public IndexingResponse stopIndexing() {
+        return indexingService.stopIndexing();
     }
 
     @PostMapping("/indexPage")
-    public ResponseEntity<IndexingResponse> indexPage(@RequestParam(name = "url") String url) {
-        return generateResponse(indexingService.indexPage(url));
+    public IndexingResponse indexPage(@RequestParam(name = "url") String url) {
+        return indexingService.indexPage(url);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<SearchResponse> search(
+    public SearchResponse search(
         @RequestParam(name = "query", required = false) String query,
         @RequestParam(name = "site", required = false) String site,
         @RequestParam(name = "offset", required = false) Integer offset,
         @RequestParam(name = "limit", required = false) Integer limit
     ) {
-        SearchResponse searchResponse = searchService.search(query, site, offset, limit);
-        if (searchResponse.isResult()) {
-            return ResponseEntity.ok().body(searchResponse);
-        }
-        return ResponseEntity.badRequest().body(searchResponse);
-    }
-
-    private ResponseEntity<IndexingResponse> generateResponse(IndexingResponse indexingResponse) {
-        if (indexingResponse.isResult()) {
-            return ResponseEntity.ok().body(indexingResponse);
-        }
-        return ResponseEntity.badRequest().body(indexingResponse);
+        return searchService.search(query, site, offset, limit);
     }
 }
